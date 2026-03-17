@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QR 출석 관리 – 광양제철소 행정섭외그룹</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Malgun Gothic','맑은 고딕',sans-serif;background:#f0f4f8;min-height:100vh}
+.hdr{background:linear-gradient(135deg,#003876,#0055b3);color:#fff;padding:14px 28px;
+     display:flex;align-items:center;gap:16px;box-shadow:0 3px 10px rgba(0,0,0,.3)}
+.hdr-logo{font-size:24px;font-weight:900;letter-spacing:2px;border:3px solid #fff;padding:3px 9px;border-radius:4px}
+.hdr-title{font-size:18px;font-weight:700}
+.hdr-sub{font-size:12px;opacity:.8;margin-top:2px}
+.hdr-status{margin-left:auto;background:rgba(255,255,255,.15);border-radius:8px;
+             padding:6px 14px;font-size:12px;text-align:right;line-height:1.7}
+.tag-on{background:#16a34a;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700}
+.tag-off{background:#d97706;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700}
+.container{max-width:1080px;margin:0 auto;padding:22px 16px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat{background:#fff;border-radius:10px;padding:14px 18px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.07)}
+.stat .num{font-size:30px;font-weight:800}
+.stat .lbl{font-size:12px;color:#888;margin-top:2px}
+.s-total .num{color:#003876}.s-present .num{color:#16a34a}
+.s-absent .num{color:#dc2626}.s-rate .num{color:#d97706}
+.mtg-bar{background:#fff;border-radius:10px;padding:14px 20px;margin-bottom:20px;
+         border-left:5px solid #003876;box-shadow:0 2px 8px rgba(0,0,0,.07);
+         display:flex;gap:24px;align-items:center;flex-wrap:wrap}
+.mtg-field{font-size:13px;color:#555}
+.mtg-field b{color:#003876}
+.grid{display:grid;grid-template-columns:1fr 340px;gap:20px}
+.card{background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.08);overflow:hidden}
+.card-hdr{background:#003876;color:#fff;padding:12px 18px;
+          display:flex;justify-content:space-between;align-items:center}
+.card-hdr h3{font-size:14px}
+.card-hdr span{font-size:12px;opacity:.8}
+.att-list{padding:10px}
+.att-item{display:flex;align-items:center;justify-content:space-between;
+           padding:10px 12px;border-radius:8px;margin-bottom:5px;
+           border:2px solid #e8edf2;transition:all .15s}
+.att-item.present{border-color:#16a34a;background:#f0fdf4}
+.att-left{display:flex;align-items:center;gap:10px}
+.att-num{width:26px;height:26px;background:#e8edf2;border-radius:50%;
+         font-size:11px;font-weight:700;display:flex;align-items:center;
+         justify-content:center;color:#555;flex-shrink:0}
+.present .att-num{background:#16a34a;color:#fff}
+.att-name{font-size:14px;font-weight:700;color:#111}
+.att-dept{font-size:11px;color:#888}
+.att-right{text-align:right}
+.badge-present{background:#16a34a;color:#fff;font-size:11px;padding:2px 10px;border-radius:20px}
+.badge-absent{color:#bbb;font-size:13px}
+.att-time{font-size:11px;color:#666;margin-top:2px}
+.btn-cancel{background:none;border:1px solid #ddd;color:#999;padding:2px 8px;
+             border-radius:4px;font-size:10px;cursor:pointer;margin-top:2px;font-family:inherit}
+.btn-cancel:hover{border-color:#dc2626;color:#dc2626}
+.side{display:flex;flex-direction:column;gap:16px}
+.side-card{background:#fff;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.08);overflow:hidden}
+.side-hdr{background:#f7f9fc;padding:11px 15px;border-bottom:1px solid #eee;
+           font-size:13px;font-weight:700;color:#003876}
+.side-body{padding:14px 15px}
+.qr-preview{text-align:center;padding:6px 0 10px}
+.qr-preview img{width:160px;height:160px;border:2px dashed #d0d5dd;border-radius:12px;padding:8px}
+.qr-preview .qr-url{font-size:10px;color:#888;margin-top:6px;word-break:break-all}
+.f-group{margin-bottom:10px}
+.f-group label{display:block;font-size:11px;color:#666;margin-bottom:3px}
+.f-group input,.f-group select{width:100%;padding:7px 10px;border:1px solid #ddd;
+  border-radius:6px;font-size:13px;font-family:inherit}
+.f-group input:focus{outline:none;border-color:#0055b3;box-shadow:0 0 0 2px rgba(0,85,179,.15)}
+.f-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.toggle-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.toggle-row label{font-size:13px;color:#333}
+.btn{width:100%;padding:11px;border:none;border-radius:8px;font-size:13px;
+      font-weight:700;cursor:pointer;font-family:inherit;transition:all .15s;margin-bottom:7px}
+.btn-primary{background:linear-gradient(135deg,#003876,#0055b3);color:#fff}
+.btn-primary:hover{box-shadow:0 4px 12px rgba(0,85,179,.4);transform:translateY(-1px)}
+.btn-success{background:#16a34a;color:#fff}
+.btn-success:hover{background:#15803d}
+.btn-danger{background:#f0f4f8;color:#666;border:1px solid #ddd}
+.btn-danger:hover{background:#fee2e2;color:#dc2626;border-color:#dc2626}
+.btn-outline{background:#fff;color:#003876;border:2px solid #003876}
+.btn-outline:hover{background:#003876;color:#fff}
+.toast{position:fixed;bottom:22px;right:22px;background:#222;color:#fff;
+       padding:11px 20px;border-radius:8px;font-size:13px;opacity:0;
+       transform:translateY(8px);transition:all .3s;pointer-events:none;z-index:9999}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.ok{background:#16a34a}.toast.err{background:#dc2626}
+.upd{font-size:11px;color:#999;text-align:right;margin-bottom:6px}
+.member-row{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+.member-row input{flex:1;padding:5px 8px;border:1px solid #ddd;border-radius:5px;
+                   font-size:12px;font-family:inherit}
+.member-row input:focus{outline:none;border-color:#0055b3}
+.btn-del-m{background:none;border:1px solid #eee;color:#bbb;padding:4px 9px;
+            border-radius:4px;font-size:11px;cursor:pointer}
+.btn-del-m:hover{border-color:#dc2626;color:#dc2626}
+.btn-add-m{background:#003876;color:#fff;border:none;padding:6px 12px;
+            border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit}
+.btn-add-m:hover{background:#0055b3}
+.members-box{max-height:280px;overflow-y:auto;border:1px solid #eee;border-radius:6px;padding:8px}
+.member-row{display:flex;align-items:center;gap:5px;margin-bottom:5px;border-radius:5px;transition:background .1s}
+.member-row.dragging{opacity:.4;background:#e8f0fe}
+.member-row.drag-over{border-top:2px solid #0055b3}
+.drag-handle{cursor:grab;color:#ccc;font-size:15px;padding:0 3px;user-select:none;flex-shrink:0;line-height:1}
+.drag-handle:hover{color:#666}
+.m-section{flex:1.3;padding:5px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;font-family:inherit}
+.m-name{flex:1;padding:5px 6px;border:1px solid #ddd;border-radius:5px;font-size:12px;font-family:inherit}
+.m-section:focus,.m-name:focus{outline:none;border-color:#0055b3}
+.btn-excel{background:#217346;color:#fff;border:none;padding:7px 12px;
+           border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;white-space:nowrap}
+.btn-excel:hover{background:#1a5c38}
+.seq-num{font-size:10px;color:#bbb;min-width:16px;text-align:center;flex-shrink:0}
+@media(max-width:720px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-logo">POSCO</div>
+  <div>
+    <div class="hdr-title">QR 출석 관리 시스템</div>
+    <div class="hdr-sub">광양제철소 행정섭외그룹 행정기획업무</div>
+  </div>
+  <div class="hdr-status">
+    {% if tunnel_active %}
+      <span class="tag-on">TUNNEL ON</span><br>
+      <b style="font-size:11px">{{ public_url }}</b>
+    {% else %}
+      <span class="tag-off">LOCAL ONLY</span><br>
+      <b>{{ ip }}:{{ port }}</b>
+    {% endif %}
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="mtg-bar">
+    <div class="mtg-field"><b>회의명</b>&nbsp; <span id="dispMtgName">{{ config.meeting_name }}</span></div>
+    <div class="mtg-field"><b>장&nbsp;&nbsp;소</b>&nbsp; <span id="dispMtgPlace">{{ config.meeting_place }}</span></div>
+    <div class="mtg-field"><b>일&nbsp;&nbsp;시</b>&nbsp; <span id="dispDate"></span></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat s-total"><div class="num" id="sTotal">{{ total }}</div><div class="lbl">전체 인원</div></div>
+    <div class="stat s-present"><div class="num" id="sPresent">{{ present_count }}</div><div class="lbl">출석</div></div>
+    <div class="stat s-absent"><div class="num" id="sAbsent">{{ absent_count }}</div><div class="lbl">미출석</div></div>
+    <div class="stat s-rate"><div class="num" id="sRate">{{ (present_count / total * 100)|round|int if total else 0 }}%</div><div class="lbl">출석률</div></div>
+  </div>
+
+  <div class="grid">
+
+    <div>
+      <div class="upd">마지막 갱신: <span id="lastUpd">-</span> (3초마다 자동 갱신)</div>
+      <div class="card">
+        <div class="card-hdr">
+          <h3>✅ 실시간 출석 현황</h3>
+          <span id="hdrCount">{{ present_count }}/{{ total }}명 출석</span>
+        </div>
+        <div class="att-list" id="attList">
+          {% for m in members %}
+          {% set a = attendance.get(m.id) %}
+          <div class="att-item {% if a %}present{% endif %}" id="row-{{ m.id }}">
+            <div class="att-left">
+              <div class="att-num" id="num-{{ m.id }}">{% if a %}✓{% else %}{{ loop.index }}{% endif %}</div>
+              <div>
+                <div class="att-name">{{ m.name }}</div>
+                <div class="att-dept">{{ m.dept }}</div>
+              </div>
+            </div>
+            <div class="att-right" id="right-{{ m.id }}">
+              {% if a %}
+                <div class="badge-present">출석</div>
+                <div class="att-time">QR 체크인 {{ a.time }}</div>
+                <button class="btn-cancel" onclick="cancelCheckin('{{ m.id }}')">취소</button>
+              {% else %}
+                <div class="badge-absent">미출석</div>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="side">
+
+      <div class="side-card">
+        <div class="side-hdr">📱 공용 QR 코드 (1개 — 회의실에 게시)</div>
+        <div class="side-body">
+          <div class="qr-preview">
+            <img src="data:image/png;base64,{{ qr_b64 }}" alt="QR">
+            <div class="qr-url">{{ qr_url }}</div>
+          </div>
+          <button class="btn btn-outline" onclick="window.open('/qr','_blank')">🖨️ QR 코드 인쇄 페이지</button>
+          <button class="btn btn-success" onclick="sendEmailNow()">📨 지금 메일 발송</button>
+          <button class="btn btn-danger" onclick="resetAll()">🔄 출석 초기화</button>
+        </div>
+      </div>
+
+      <div class="side-card">
+        <div class="side-hdr">📧 이메일 · 자동 발송 · ngrok 설정</div>
+        <div class="side-body">
+          <div class="f-group">
+            <label>회의명</label>
+            <input type="text" id="cfgMtgName" value="{{ config.meeting_name }}">
+          </div>
+          <div class="f-group">
+            <label>장소</label>
+            <input type="text" id="cfgMtgPlace" value="{{ config.meeting_place }}">
+          </div>
+          <div class="f-group">
+            <label>그룹장님 이메일 (수신)</label>
+            <input type="email" id="cfgTo" value="{{ config.email_to }}" placeholder="leader@posco.com">
+          </div>
+          <div class="f-group">
+            <label>참조 (선택)</label>
+            <input type="email" id="cfgCc" value="{{ config.email_cc }}">
+          </div>
+          <div class="f-row">
+            <div class="f-group">
+              <label>SMTP 서버</label>
+              <input type="text" id="cfgSmtpHost" value="{{ config.smtp_host }}">
+            </div>
+            <div class="f-group">
+              <label>포트</label>
+              <input type="number" id="cfgSmtpPort" value="{{ config.smtp_port }}">
+            </div>
+          </div>
+          <div class="f-group">
+            <label>이메일 계정 (발신)</label>
+            <input type="text" id="cfgSmtpUser" value="{{ config.smtp_user }}" placeholder="your@email.com">
+          </div>
+          <div class="f-group">
+            <label>이메일 비밀번호 / 앱 비밀번호</label>
+            <input type="password" id="cfgSmtpPass" value="{{ config.smtp_pass }}"
+                   placeholder="Gmail은 앱 비밀번호 16자리 입력">
+          </div>
+          <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;
+                      padding:10px 12px;margin:-4px 0 10px;font-size:11px;line-height:1.7;color:#78350f">
+            <b>⚠️ Gmail 사용자 필수 설정</b><br>
+            Gmail 일반 비밀번호는 SMTP 차단됨 → <b>앱 비밀번호</b> 필요<br>
+            ① Google 계정 →
+              <a href="https://myaccount.google.com/apppasswords" target="_blank"
+                 style="color:#0055b3;font-weight:700">앱 비밀번호 발급 페이지</a> 접속<br>
+            ② 앱 선택: <b>메일</b> / 기기: <b>Windows 컴퓨터</b> → 생성<br>
+            ③ 표시된 <b>16자리 비밀번호</b>를 위 입력란에 붙여넣기<br>
+            ④ <b>설정 저장</b> 후 다시 메일 발송 테스트<br>
+            <span style="color:#b45309">※ 앱 비밀번호 발급하려면 Google 계정 2단계 인증이 활성화돼 있어야 합니다.</span>
+          </div>
+          <div class="f-group">
+            <label>발신자 이름</label>
+            <input type="text" id="cfgSenderName" value="{{ config.sender_name }}">
+          </div>
+          <hr style="margin:10px 0;border-color:#eee">
+          <div class="toggle-row">
+            <input type="checkbox" id="cfgAutoEnabled" {% if config.auto_send_enabled %}checked{% endif %}>
+            <label for="cfgAutoEnabled">자동 발송 사용</label>
+          </div>
+          <div class="f-group">
+            <label>자동 발송 시각 (매일)</label>
+            <input type="time" id="cfgAutoTime" value="{{ config.auto_send_time }}">
+          </div>
+          <hr style="margin:10px 0;border-color:#eee">
+          <div class="f-group">
+            <label>ngrok Authtoken (<a href="https://dashboard.ngrok.com/signup" target="_blank" style="color:#0055b3">무료 발급</a> — 셀룰러 접속 필수)</label>
+            <input type="text" id="cfgNgrokToken" value="{{ config.ngrok_authtoken }}" placeholder="토큰 붙여넣기 후 저장 → 서버 재시작">
+          </div>
+          <div style="font-size:11px;color:#888;margin:-6px 0 10px;line-height:1.6">
+            {% if tunnel_active %}
+              <span style="color:#16a34a;font-weight:700">● 터널 활성</span> – 셀룰러 데이터 접속 가능
+            {% else %}
+              <span style="color:#d97706;font-weight:700">● 터널 비활성</span> – 토큰 저장 후 서버 재시작 필요
+            {% endif %}
+          </div>
+          <button class="btn btn-primary" onclick="saveSettings()">💾 설정 저장</button>
+        </div>
+      </div>
+
+      <div class="side-card">
+        <div class="side-hdr">👥 그룹원 명단 관리</div>
+        <div class="side-body">
+          <div class="members-box" id="membersBox"></div>
+          <div style="font-size:11px;color:#999;margin-bottom:5px">
+            ⠿ 드래그하여 순서 변경 &nbsp;|&nbsp; 최대 100명
+          </div>
+          <div style="display:flex;gap:6px;margin-top:6px">
+            <input list="sectionList" type="text" id="newSection" placeholder="섹션"
+                   style="flex:1.3;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:inherit">
+            <datalist id="sectionList">
+              <option value="행정보안섹션"><option value="홍보섹션">
+              <option value="대외협력섹션"><option value="후생섹션">
+            </datalist>
+            <input type="text" id="newName" placeholder="이름"
+                   style="flex:1;padding:6px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px;font-family:inherit">
+            <button class="btn-add-m" onclick="addMember()">추가</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:7px">
+            <button class="btn-excel" onclick="document.getElementById('excelInput').click()">
+              📊 엑셀 가져오기
+            </button>
+            <input type="file" id="excelInput" accept=".xlsx,.xls,.csv"
+                   style="display:none" onchange="handleExcelUpload(event)">
+            <span style="font-size:10px;color:#aaa;line-height:1.4">
+              헤더행: <b>섹션</b> · <b>이름</b>
+            </span>
+          </div>
+          <button class="btn btn-primary" style="margin-top:8px" onclick="saveSettings()">💾 명단 저장</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let cfg     = {{ config|tojson }};
+let members = {{ members|tojson }};
+
+function updateDate(){
+  const now  = new Date();
+  const days = ['일','월','화','수','목','금','토'];
+  const pad  = n => String(n).padStart(2,'0');
+  document.getElementById('dispDate').textContent =
+    `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 `+
+    `(${days[now.getDay()]}) ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+}
+setInterval(updateDate, 1000); updateDate();
+
+async function poll(){
+  try {
+    const data = await (await fetch('/api/status')).json();
+    document.getElementById('sTotal').textContent   = data.total;
+    document.getElementById('sPresent').textContent = data.present;
+    document.getElementById('sAbsent').textContent  = data.absent;
+    document.getElementById('sRate').textContent    = data.rate + '%';
+    document.getElementById('hdrCount').textContent = `${data.present}/${data.total}명 출석`;
+    data.members.forEach((m,i)=>{
+      const row   = document.getElementById('row-'+m.id);
+      const num   = document.getElementById('num-'+m.id);
+      const right = document.getElementById('right-'+m.id);
+      if(!row) return;
+      if(m.present){
+        row.className = 'att-item present';
+        num.textContent = '✓';
+        right.innerHTML = `<div class="badge-present">출석</div>
+          <div class="att-time">QR 체크인 ${m.time}</div>
+          <button class="btn-cancel" onclick="cancelCheckin('${m.id}')">취소</button>`;
+      } else {
+        row.className = 'att-item';
+        num.textContent = i+1;
+        right.innerHTML = '<div class="badge-absent">미출석</div>';
+      }
+    });
+    const now = new Date();
+    document.getElementById('lastUpd').textContent =
+      String(now.getHours()).padStart(2,'0')+':'+
+      String(now.getMinutes()).padStart(2,'0')+':'+
+      String(now.getSeconds()).padStart(2,'0');
+  } catch(e){}
+}
+setInterval(poll, 3000);
+
+async function cancelCheckin(id){
+  if(!confirm('출석을 취소하시겠습니까?')) return;
+  await fetch('/api/cancel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+  poll(); showToast('출석 취소됨','err');
+}
+async function resetAll(){
+  if(!confirm('모든 출석 기록을 초기화하시겠습니까?')) return;
+  await fetch('/api/reset',{method:'POST'});
+  poll(); showToast('출석 초기화 완료');
+}
+async function sendEmailNow(){
+  showToast('메일 발송 중...⏳');
+  try {
+    const data = await (await fetch('/api/send_email',{method:'POST'})).json();
+    if(data.ok){
+      showToast('✅ '+data.msg, 'ok');
+    } else {
+      showToast('❌ 메일 발송 실패', 'err');
+      alert('❌ 메일 발송 실패\n\n' + data.msg);
+    }
+  } catch(e) {
+    showToast('❌ 서버 통신 오류','err');
+    alert('서버 통신 오류: '+e.message);
+  }
+}
+
+function collectMembers(){
+  return [...document.querySelectorAll('#membersBox .member-row')]
+    .map(r=>{
+      const name    = r.querySelector('.m-name').value.trim();
+      const section = r.querySelector('.m-section').value.trim();
+      return {id: r.dataset.id, name, section, dept: section};
+    })
+    .filter(m=>m.name);
+}
+async function saveSettings(){
+  const newCfg = {
+    ...cfg,
+    meeting_name:      document.getElementById('cfgMtgName').value,
+    meeting_place:     document.getElementById('cfgMtgPlace').value,
+    email_to:          document.getElementById('cfgTo').value,
+    email_cc:          document.getElementById('cfgCc').value,
+    smtp_host:         document.getElementById('cfgSmtpHost').value,
+    smtp_port:         parseInt(document.getElementById('cfgSmtpPort').value)||587,
+    smtp_user:         document.getElementById('cfgSmtpUser').value,
+    smtp_pass:         document.getElementById('cfgSmtpPass').value,
+    sender_name:       document.getElementById('cfgSenderName').value,
+    auto_send_enabled: document.getElementById('cfgAutoEnabled').checked,
+    auto_send_time:    document.getElementById('cfgAutoTime').value,
+    ngrok_authtoken:   document.getElementById('cfgNgrokToken').value,
+    members:           collectMembers(),
+  };
+  const data = await (await fetch('/api/save_config',{
+    method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(newCfg)
+  })).json();
+  if(data.ok){
+    cfg = newCfg; members = newCfg.members;
+    document.getElementById('dispMtgName').textContent  = newCfg.meeting_name;
+    document.getElementById('dispMtgPlace').textContent = newCfg.meeting_place;
+    showToast('✅ 저장 완료','ok'); poll();
+  } else { showToast('❌ 저장 실패','err'); }
+}
+
+// ── 멤버 목록 렌더링 ──
+function escH(s){ return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+let dragSrc = null;
+function renderMembersBox(){
+  const box = document.getElementById('membersBox');
+  box.innerHTML = '';
+  const MAX = 100;
+  members.slice(0, MAX).forEach((m, i)=>{
+    const div = document.createElement('div');
+    div.className = 'member-row';
+    div.draggable = true;
+    div.dataset.id = m.id;
+    div.innerHTML = `
+      <span class="seq-num">${i+1}</span>
+      <span class="drag-handle" title="드래그하여 순서 변경">⠿</span>
+      <input list="sectionList" class="m-section" value="${escH(m.section||m.dept||'')}" placeholder="섹션">
+      <input class="m-name" value="${escH(m.name)}" placeholder="이름">
+      <button class="btn-del-m" onclick="this.closest('.member-row').remove(); refreshSeqNums()">삭제</button>`;
+    div.addEventListener('dragstart', onDragStart);
+    div.addEventListener('dragover',  onDragOver);
+    div.addEventListener('dragleave', onDragLeave);
+    div.addEventListener('drop',      onDrop);
+    div.addEventListener('dragend',   onDragEnd);
+    box.appendChild(div);
+  });
+  if(members.length >= MAX){
+    const note = document.createElement('div');
+    note.style = 'font-size:11px;color:#d97706;padding:4px 6px';
+    note.textContent = `⚠ 최대 ${MAX}명까지 입력 가능합니다.`;
+    box.appendChild(note);
+  }
+}
+
+function refreshSeqNums(){
+  document.querySelectorAll('#membersBox .member-row').forEach((r,i)=>{
+    const n = r.querySelector('.seq-num');
+    if(n) n.textContent = i+1;
+  });
+}
+
+// ── 드래그 & 드롭 ──
+function onDragStart(e){
+  dragSrc = this;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain','');
+  setTimeout(()=>this.classList.add('dragging'), 0);
+}
+function onDragOver(e){
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  if(this !== dragSrc) this.classList.add('drag-over');
+  return false;
+}
+function onDragLeave(){ this.classList.remove('drag-over'); }
+function onDrop(e){
+  e.stopPropagation();
+  if(this !== dragSrc && this.classList.contains('member-row')){
+    const box  = document.getElementById('membersBox');
+    const rows = [...box.querySelectorAll('.member-row')];
+    const si = rows.indexOf(dragSrc), ti = rows.indexOf(this);
+    if(si < ti) box.insertBefore(dragSrc, this.nextSibling);
+    else        box.insertBefore(dragSrc, this);
+    refreshSeqNums();
+  }
+  this.classList.remove('drag-over');
+  return false;
+}
+function onDragEnd(){
+  this.classList.remove('dragging');
+  document.querySelectorAll('.member-row').forEach(r=>r.classList.remove('drag-over'));
+  dragSrc = null;
+}
+
+// ── 멤버 추가 ──
+let memberIdx = members.length + 1;
+function addMember(){
+  const box = document.getElementById('membersBox');
+  if(box.querySelectorAll('.member-row').length >= 100){ alert('최대 100명까지 입력 가능합니다.'); return; }
+  const name    = document.getElementById('newName').value.trim();
+  const section = document.getElementById('newSection').value.trim();
+  if(!name){ alert('이름을 입력하세요'); return; }
+  const id = 'm' + String(memberIdx++).padStart(2,'0');
+  members.push({id, name, section, dept: section});
+  document.getElementById('newName').value = '';
+  document.getElementById('newSection').value = '';
+  renderMembersBox(); showToast(name+' 추가됨','ok');
+}
+
+// ── 엑셀 가져오기 ──
+function handleExcelUpload(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    try {
+      const wb   = XLSX.read(ev.target.result, {type:'binary'});
+      const ws   = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+      if(!rows.length){ alert('빈 파일입니다.'); e.target.value=''; return; }
+
+      // 헤더 감지
+      const hdrs = rows[0].map(h=>String(h).trim());
+      let nameIdx    = hdrs.findIndex(h=>/이름|name/i.test(h));
+      let sectionIdx = hdrs.findIndex(h=>/섹션|section|부서|직책|dept/i.test(h));
+      const hasHeader = nameIdx >= 0;
+
+      // 헤더 없으면 컬럼 0=섹션, 1=이름 기본값
+      if(!hasHeader){ sectionIdx = 0; nameIdx = 1; }
+
+      const startRow = hasHeader ? 1 : 0;
+      const imported = [];
+      for(let i = startRow; i < rows.length; i++){
+        const row  = rows[i];
+        const name = String(row[nameIdx]||'').trim();
+        if(!name) continue;
+        const section = sectionIdx >= 0 ? String(row[sectionIdx]||'').trim() : '';
+        imported.push({id:'m'+String(memberIdx++).padStart(2,'0'), name, section, dept:section});
+      }
+      if(!imported.length){ alert('가져올 데이터가 없습니다.'); e.target.value=''; return; }
+
+      const curCount = document.getElementById('membersBox').querySelectorAll('.member-row').length;
+      let replace = true;
+      if(curCount > 0){
+        const ans = confirm(
+          `엑셀에서 ${imported.length}명을 발견했습니다.\n\n`+
+          `[확인] 기존 명단(${curCount}명) 전체 교체\n[취소] 기존 명단에 추가`
+        );
+        replace = ans;
+      }
+      members = replace ? imported : [...collectMembers(), ...imported];
+      members = members.slice(0, 100);
+      renderMembersBox();
+      showToast(`${imported.length}명 가져오기 완료`,'ok');
+    } catch(err){ alert('파일 읽기 오류: '+err.message); }
+    e.target.value = '';
+  };
+  reader.readAsBinaryString(file);
+}
+
+renderMembersBox();
+
+let toastT;
+function showToast(msg,type=''){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show'+(type?' '+type:'');
+  clearTimeout(toastT);
+  toastT = setTimeout(()=>{ t.className='toast'; }, 2800);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+{
+  "auto_send_enabled": false,
+  "auto_send_time": "10:30",
+  "email_cc": "",
+  "email_to": "winspring@posco.com",
+  "meeting_name": "그룹 현안회의",
+  "meeting_place": "행정섭외그룹 회의실",
+  "members": [
+    {
+      "id": "m01",
+      "name": "홍길동",
+      "section": "그룹장",
+      "dept": "그룹장"
+    },
+    {
+      "id": "m02",
+      "name": "김영수",
+      "section": "행정보안섹션",
+      "dept": "행정보안섹션"
+    },
+    {
+      "id": "m03",
+      "name": "이수진",
+      "section": "행정보안섹션",
+      "dept": "행정보안섹션"
+    },
+    {
+      "id": "m04",
+      "name": "박민준",
+      "section": "홍보섹션",
+      "dept": "홍보섹션"
+    },
+    {
+      "id": "m05",
+      "name": "최지원",
+      "section": "홍보섹션",
+      "dept": "홍보섹션"
+    },
+    {
+      "id": "m06",
+      "name": "정대한",
+      "section": "대외협력섹션",
+      "dept": "대외협력섹션"
+    },
+    {
+      "id": "m07",
+      "name": "한소희",
+      "section": "대외협력섹션",
+      "dept": "대외협력섹션"
+    },
+    {
+      "id": "m08",
+      "name": "윤재영",
+      "section": "후생섹션",
+      "dept": "후생섹션"
+    },
+    {
+      "id": "m09",
+      "name": "임재민",
+      "section": "후생섹션",
+      "dept": "후생섹션"
+    },
+    {
+      "id": "m10",
+      "name": "강나연",
+      "section": "후생섹션",
+      "dept": "후생섹션"
+    }
+  ],
+  "ngrok_authtoken": "3AyaDnvrllKsuikkp4oqH9gpbfR_5imFRZyMWy7oHmKNDChgc",
+  "sender_name": "행정기획 담당자",
+  "smtp_host": "smtp.gmail.com",
+  "smtp_pass": "jpaw uxal pbea yblu",
+  "smtp_port": 587,
+  "smtp_user": "greatchun21@gmail.com"
+}
