@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QR 출석 체크인 안내문</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    background: #f0f4f8;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px 20px;
+    min-height: 100vh;
+  }
+
+  /* Print button (hidden when printing) */
+  .print-bar {
+    width: 100%;
+    max-width: 560px;
+    text-align: right;
+    margin-bottom: 14px;
+  }
+  .btn-print {
+    background: #003087;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 22px;
+    font-size: 14px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .btn-print:hover { background: #0050c8; }
+
+  /* Main card */
+  .card {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.12);
+    width: 100%;
+    max-width: 560px;
+    overflow: hidden;
+  }
+
+  .card-header {
+    background: linear-gradient(135deg, #003087 0%, #0050c8 100%);
+    color: #fff;
+    padding: 28px 32px 22px;
+    text-align: center;
+  }
+  .card-header .org   { font-size: 12px; opacity: .8; letter-spacing: 1.5px; margin-bottom: 6px; }
+  .card-header h1     { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+  .card-header .sub   { font-size: 14px; opacity: .85; }
+
+  .card-body {
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+
+  /* QR image */
+  .qr-wrap {
+    background: #fff;
+    border: 3px solid #003087;
+    border-radius: 16px;
+    padding: 18px;
+    display: inline-block;
+  }
+  .qr-wrap img { width: 260px; height: 260px; display: block; }
+
+  /* Tunnel status badge */
+  .tunnel-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .tunnel-on  { background: #e8f5e9; color: #2e7d32; }
+  .tunnel-off { background: #fff3e0; color: #e65100; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+
+  /* URL display */
+  .url-box {
+    background: #f8faff;
+    border: 1px solid #cdd8f0;
+    border-radius: 10px;
+    padding: 10px 16px;
+    width: 100%;
+    text-align: center;
+    font-size: 12px;
+    color: #555;
+    word-break: break-all;
+  }
+  .url-box .label { font-size: 11px; color: #999; margin-bottom: 4px; }
+  .url-box .url   { color: #003087; font-weight: 600; }
+
+  /* Steps */
+  .steps {
+    width: 100%;
+    background: #f8faff;
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .steps h3 { font-size: 14px; font-weight: 700; color: #003087; margin-bottom: 12px; }
+  .step-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .step-row:last-child { margin-bottom: 0; }
+  .step-num {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    background: #003087;
+    color: #fff;
+    border-radius: 50%;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .step-text { font-size: 14px; color: #333; line-height: 1.5; padding-top: 3px; }
+  .step-text strong { color: #003087; }
+
+  .card-footer {
+    background: #f8faff;
+    border-top: 1px solid #e8eef8;
+    padding: 14px 32px;
+    text-align: center;
+    font-size: 11px;
+    color: #999;
+  }
+
+  /* ── Print styles ── */
+  @media print {
+    body       { background: #fff; padding: 0; }
+    .print-bar { display: none; }
+    .card {
+      box-shadow: none;
+      border-radius: 0;
+      max-width: 100%;
+      border: none;
+    }
+    .card-body { gap: 16px; padding: 24px; }
+    .btn-print { display: none; }
+    .steps     { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div class="print-bar">
+  <button class="btn-print" onclick="window.print()">🖨️ 인쇄하기</button>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div class="org">POSCO GWANGYANG &nbsp;·&nbsp; ADMINISTRATIVE AFFAIRS GROUP</div>
+    <h1>{{ meeting_name }}</h1>
+    <div class="sub">QR 출석 체크인 안내</div>
+  </div>
+
+  <div class="card-body">
+
+    <!-- Tunnel status -->
+    {% if tunnel_active %}
+    <div class="tunnel-badge tunnel-on">
+      <span class="dot"></span> 외부 접속 활성화 (셀룰러 데이터 사용 가능)
+    </div>
+    {% else %}
+    <div class="tunnel-badge tunnel-off">
+      <span class="dot"></span> 로컬 네트워크 전용 (ngrok 미설정)
+    </div>
+    {% endif %}
+
+    <!-- QR code -->
+    <div class="qr-wrap">
+      <img src="data:image/png;base64,{{ qr_b64 }}" alt="QR Check-in Code">
+    </div>
+
+    <!-- URL display -->
+    <div class="url-box">
+      <div class="label">체크인 주소</div>
+      <div class="url">{{ qr_url }}</div>
+    </div>
+
+    <!-- Steps guide -->
+    <div class="steps">
+      <h3>📱 체크인 방법</h3>
+      <div class="step-row">
+        <div class="step-num">1</div>
+        <div class="step-text">핸드폰 카메라로 <strong>QR 코드를 스캔</strong>하세요.</div>
+      </div>
+      <div class="step-row">
+        <div class="step-num">2</div>
+        <div class="step-text">화면에서 <strong>본인 이름을 선택</strong>하세요.</div>
+      </div>
+      <div class="step-row">
+        <div class="step-num">3</div>
+        <div class="step-text"><strong>"출석 체크하기"</strong> 버튼을 누르면 완료됩니다.</div>
+      </div>
+    </div>
+
+  </div><!-- /card-body -->
+
+  <div class="card-footer">
+    광양제철소 행정섭외그룹 &nbsp;|&nbsp; 행정기획 담당자
+  </div>
+</div>
+
+</body>
+</html>
