@@ -270,29 +270,39 @@ def send_email_brevo(cfg: dict) -> tuple[bool, str]:
         payload["cc"] = [{"email": addr.strip()} for addr in cc.split(',') if addr.strip()]
 
     data = json.dumps(payload).encode('utf-8')
-    req = urllib.request.Request(
-        'https://api.brevo.com/v3/smtp/email',
-        data=data,
-        headers={
-            'accept': 'application/json',
-            'api-key': api_key,
-            'content-type': 'application/json',
-        },
-        method='POST'
-    )
+    api_url = 'https://api.brevo.com/v3/smtp/email'
+    hdrs = {
+        'accept': 'application/json',
+        'api-key': api_key,
+        'content-type': 'application/json',
+    }
+
+    def _make_request(ssl_ctx=None):
+        r = urllib.request.Request(api_url, data=data, headers=hdrs, method='POST')
+        return urllib.request.urlopen(r, timeout=30, context=ssl_ctx)
+
     try:
         import ssl
-        ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
-        with urllib.request.urlopen(req, timeout=30, context=ctx) as resp:
-            log.info('Brevo email sent: %s', resp.read().decode())
-            return True, '메일이 성공적으로 발송되었습니다. (Brevo API)'
+        # 1차: 기본 SSL (일반 PC)
+        try:
+            with _make_request() as resp:
+                log.info('Brevo email sent: %s', resp.read().decode())
+                return True, '메일이 성공적으로 발송되었습니다. (Brevo API)'
+        except (ssl.SSLError, urllib.error.URLError) as ssl_err:
+            # 2차: 완화된 SSL (회사 프록시 환경)
+            log.warning('Default SSL failed (%s), retrying with relaxed SSL...', ssl_err)
+            ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            ctx.set_ciphers('DEFAULT:@SECLEVEL=0')
+            with _make_request(ssl_ctx=ctx) as resp:
+                log.info('Brevo email sent (relaxed SSL): %s', resp.read().decode())
+                return True, '메일이 성공적으로 발송되었습니다. (Brevo API)'
     except urllib.error.HTTPError as e:
         err_body = e.read().decode('utf-8', errors='replace')
         log.error('Brevo API error %s: %s', e.code, err_body)
         if e.code == 401:
-            return False, 'Brevo API 키가 유효하지 않습니다. 키를 확인해 주세요.'
+            return False, f'Brevo API 인증 실패 (401). 키를 확인해 주세요.\n응답: {err_body}'
         return False, f'Brevo 발송 실패 (HTTP {e.code}): {err_body}'
     except Exception as e:
         log.error('Brevo error: %s', e)
