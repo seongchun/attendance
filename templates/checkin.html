@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>{{ meeting_name }} - QR 출석 체크인</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    background: #f0f4f8;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .header {
+    width: 100%;
+    background: linear-gradient(135deg, #003087 0%, #0050c8 100%);
+    color: #fff;
+    padding: 18px 20px 14px;
+    text-align: center;
+  }
+  .header .logo { font-size: 11px; opacity: .75; letter-spacing: 1px; margin-bottom: 4px; }
+  .header h1  { font-size: 17px; font-weight: 700; }
+
+  .container {
+    width: 100%;
+    max-width: 480px;
+    padding: 20px 16px;
+  }
+
+  /* ── STEP 1 : member list ── */
+  #step-select .instruction {
+    background: #fff;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    color: #444;
+    line-height: 1.6;
+    border-left: 4px solid #0050c8;
+  }
+  #step-select .instruction strong { color: #003087; }
+
+  .member-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .member-btn {
+    background: #fff;
+    border: 2px solid #d0d9e8;
+    border-radius: 12px;
+    padding: 14px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .2s;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .member-btn:active { transform: scale(.96); }
+  .member-btn .name  { font-size: 16px; font-weight: 700; color: #1a1a2e; }
+  .member-btn .dept  { font-size: 11px; color: #888; margin-top: 3px; }
+
+  .member-btn.checked {
+    background: #e8f5e9;
+    border-color: #43a047;
+    cursor: default;
+  }
+  .member-btn.checked .name { color: #2e7d32; }
+  .member-btn.checked::after {
+    content: '✔ 완료';
+    display: block;
+    font-size: 11px;
+    color: #43a047;
+    font-weight: 600;
+    margin-top: 4px;
+  }
+
+  /* ── STEP 2 : confirm ── */
+  .step { display: none; }
+  .step.active { display: block; }
+  .confirm-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 28px 20px;
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(0,0,0,.08);
+  }
+  .confirm-card .q   { font-size: 14px; color: #666; margin-bottom: 10px; }
+  .confirm-card .who { font-size: 26px; font-weight: 800; color: #003087; margin-bottom: 6px; }
+  .confirm-card .dept-label { font-size: 14px; color: #888; margin-bottom: 24px; }
+
+  .btn-checkin {
+    width: 100%;
+    background: linear-gradient(135deg, #003087, #0050c8);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 16px;
+    font-size: 17px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-bottom: 10px;
+    transition: opacity .2s;
+  }
+  .btn-checkin:active { opacity: .85; }
+
+  .btn-back {
+    width: 100%;
+    background: #f5f5f5;
+    color: #555;
+    border: none;
+    border-radius: 12px;
+    padding: 13px;
+    font-size: 15px;
+    cursor: pointer;
+  }
+  .btn-back:active { background: #e8e8e8; }
+
+  /* ── STEP 3 : success ── */
+  #step-success { text-align: center; }
+  .success-icon {
+    font-size: 72px;
+    margin-bottom: 12px;
+    animation: pop .4s ease;
+  }
+  @keyframes pop {
+    0%   { transform: scale(0); }
+    70%  { transform: scale(1.15); }
+    100% { transform: scale(1); }
+  }
+  .success-name  { font-size: 24px; font-weight: 800; color: #003087; margin-bottom: 6px; }
+  .success-msg   { font-size: 16px; color: #555; margin-bottom: 8px; }
+  .success-time  { font-size: 13px; color: #43a047; font-weight: 600; background: #e8f5e9;
+                   display: inline-block; padding: 4px 12px; border-radius: 20px; }
+  .btn-again {
+    margin-top: 24px;
+    background: #f0f4f8;
+    color: #555;
+    border: none;
+    border-radius: 12px;
+    padding: 12px 28px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  /* ── STEP : already ── */
+  #step-already { text-align: center; }
+  .already-icon  { font-size: 60px; margin-bottom: 12px; }
+  .already-name  { font-size: 22px; font-weight: 800; color: #e65100; margin-bottom: 6px; }
+  .already-msg   { font-size: 14px; color: #777; margin-bottom: 8px; }
+  .already-time  { font-size: 13px; color: #fb8c00; font-weight: 600; background: #fff3e0;
+                   display: inline-block; padding: 4px 12px; border-radius: 20px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">POSCO GWANGYANG · ADMINISTRATIVE AFFAIRS GROUP</div>
+  <h1>{{ meeting_name }} 출석 체크인</h1>
+</div>
+
+<div class="container">
+
+  <!-- STEP 1: select name -->
+  <div id="step-select" class="step active">
+    <div class="instruction">
+      <strong>본인 이름을 선택</strong>하여 출석 체크인 하세요.<br>
+      이미 체크인된 이름은 선택할 수 없습니다.
+    </div>
+    <div class="member-grid" id="member-grid">
+      {% for m in members %}
+      <button
+        class="member-btn {% if m.id in checked_ids %}checked{% endif %}"
+        data-id="{{ m.id }}"
+        data-name="{{ m.name }}"
+        data-dept="{{ m.section if 'section' in m else m.dept }}"
+        {% if m.id in checked_ids %}disabled{% endif %}
+        onclick="selectMember(this)">
+        <div class="name">{{ m.name }}</div>
+        <div class="dept">{{ m.section if 'section' in m else m.dept }}</div>
+      </button>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- STEP 2: confirm -->
+  <div id="step-confirm" class="step">
+    <div class="confirm-card">
+      <div class="q">출석 체크인 하시겠습니까?</div>
+      <div class="who" id="confirm-name"></div>
+      <div class="dept-label" id="confirm-dept"></div>
+      <button class="btn-checkin" onclick="doCheckin()">✅ 출석 체크하기</button>
+      <button class="btn-back" onclick="goBack()">← 다시 선택</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: success -->
+  <div id="step-success" class="step">
+    <div class="success-icon">🎉</div>
+    <div class="success-name" id="success-name"></div>
+    <div class="success-msg">출석 체크인이 완료되었습니다!</div>
+    <div class="success-time" id="success-time"></div>
+    <br>
+    <button class="btn-again" onclick="goHome()">← 목록으로 돌아가기</button>
+  </div>
+
+  <!-- STEP already -->
+  <div id="step-already" class="step">
+    <div class="already-icon">⚠️</div>
+    <div class="already-name" id="already-name"></div>
+    <div class="already-msg">이미 출석 체크인이 완료되었습니다.</div>
+    <div class="already-time" id="already-time"></div>
+    <br>
+    <button class="btn-again" onclick="goHome()">← 목록으로 돌아가기</button>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+  let selectedId   = '';
+  let selectedName = '';
+  let selectedDept = '';
+
+  function show(stepId) {
+    ['step-select','step-confirm','step-success','step-already']
+      .forEach(id => {
+        const el = document.getElementById(id);
+        if (id === stepId) { el.classList.add('active'); }
+        else               { el.classList.remove('active'); }
+      });
+  }
+
+  function selectMember(btn) {
+    if (btn.disabled) return;
+    selectedId   = btn.dataset.id;
+    selectedName = btn.dataset.name;
+    selectedDept = btn.dataset.dept;
+    document.getElementById('confirm-name').textContent = selectedName;
+    document.getElementById('confirm-dept').textContent = selectedDept;
+    show('step-confirm');
+  }
+
+  function goBack()  { show('step-select'); }
+  function goHome()  { location.reload(); }
+
+  async function doCheckin() {
+    try {
+      const res  = await fetch('/api/checkin', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({id: selectedId})
+      });
+      const data = await res.json();
+
+      if (data.already) {
+        document.getElementById('already-name').textContent = data.name;
+        document.getElementById('already-time').textContent = '체크인 시각: ' + data.time;
+        show('step-already');
+        return;
+      }
+      if (data.ok) {
+        document.getElementById('success-name').textContent = data.name;
+        document.getElementById('success-time').textContent = '체크인 시각: ' + data.time;
+        show('step-success');
+        return;
+      }
+      alert(data.msg || '오류가 발생했습니다.');
+      goBack();
+    } catch(e) {
+      alert('서버와 통신 중 오류가 발생했습니다.\n잠시 후 다시 시도해 주세요.');
+      goBack();
+    }
+  }
+</script>
+</body>
+</html>
